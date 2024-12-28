@@ -11,6 +11,16 @@ echo "After the installation is complete, this script will delete itself."
 # Path for the update script
 SCRIPT_PATH="/usr/local/bin/update_script.sh"
 
+# Check if the update script is already installed
+if [ -f "$SCRIPT_PATH" ]; then
+    read -p "The update script is already installed. Do you want to reinstall it? [s/n]: " reinstall_choice
+    if [[ "$reinstall_choice" != "s" ]]; then
+        echo "Exiting without changes."
+        rm -- "$0"  # Auto-delete the script
+        exit 0
+    fi
+fi
+
 # Create the update script
 echo "#!/bin/bash" | sudo tee $SCRIPT_PATH > /dev/null
 echo "sudo apt update && sudo apt upgrade -y" | sudo tee -a $SCRIPT_PATH > /dev/null
