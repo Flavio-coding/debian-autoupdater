@@ -13,8 +13,8 @@ SCRIPT_PATH="/usr/local/bin/update_script.sh"
 
 # Check if the update script is already installed
 if [ -f "$SCRIPT_PATH" ]; then
-    read -p "The update script is already installed. Do you want to reinstall it? [s/n]: " reinstall_choice
-    if [[ "$reinstall_choice" != "s" ]]; then
+    read -p "The update script is already installed. Do you want to reinstall it? [y/n]: " reinstall_choice
+    if [[ "$reinstall_choice" != "y" ]]; then
         echo "Exiting without changes."
         rm -- "$0"  # Auto-delete the script
         exit 0
@@ -50,8 +50,32 @@ echo "sudo apt update && sudo apt upgrade -y" | sudo tee -a $SCRIPT_PATH > /dev/
 # Make the update script executable
 sudo chmod +x $SCRIPT_PATH
 
-# Add the command to the root user's crontab
-(crontab -l 2>/dev/null; echo "$minute $hour * * * $SCRIPT_PATH") | sudo crontab -
+# Check if the cron job already exists
+existing_cron=$(sudo crontab -l 2>/dev/null | grep "$SCRIPT_PATH")
+
+if [[ -n "$existing_cron" ]]; then
+    echo "A cron job for this script already exists."
+    read -p "Do you want to overwrite the existing cron job or add a new one with a different time? [o/a]: " cron_choice
+
+    if [[ "$cron_choice" == "o" ]]; then
+        # Remove the old cron job and add the new one
+        sudo crontab -l | grep -v "$SCRIPT_PATH" | sudo crontab -
+        (crontab -l 2>/dev/null; echo "$minute $hour * * * $SCRIPT_PATH") | sudo crontab -
+        echo "The existing cron job has been overwritten with the new time."
+    elif [[ "$cron_choice" == "a" ]]; then
+        # Add the new cron job without removing the old one
+        (crontab -l 2>/dev/null; echo "$minute $hour * * * $SCRIPT_PATH") | sudo crontab -
+        echo "A new cron job has been added with the new time."
+    else
+        echo "Invalid option. Exiting without changes."
+        rm -- "$0"  # Auto-delete the script
+        exit 1
+    fi
+else
+    # Add the cron job if it does not exist
+    (crontab -l 2>/dev/null; echo "$minute $hour * * * $SCRIPT_PATH") | sudo crontab -
+    echo "Cron job added to run the update script daily at $hour:$minute."
+fi
 
 # Configure sudo to not require a password for the command
 echo "$(whoami) ALL=(ALL) NOPASSWD: $SCRIPT_PATH" | sudo tee /etc/sudoers.d/update_script > /dev/null
