@@ -4,7 +4,7 @@
 echo "=============================="
 echo "         AUTO-UPDATER         "
 echo "=============================="
-echo "This script will create an update script that runs 'sudo apt update && sudo apt upgrade -y' daily at 16:30."
+echo "This script will create an update script that runs 'sudo apt update && sudo apt upgrade -y' daily at the time you specify."
 echo "It will also configure sudo to allow running this script without a password."
 echo "After the installation is complete, this script will delete itself."
 
@@ -21,6 +21,28 @@ if [ -f "$SCRIPT_PATH" ]; then
     fi
 fi
 
+# Ask user for the hour in 24-hour format
+while true; do
+    read -p "Please enter the hour in 24-hour format (00-23): " hour
+    # Check if the hour is valid
+    if [[ "$hour" =~ ^([01]?[0-9]|2[0-3])$ ]]; then
+        break
+    else
+        echo "Invalid hour. Please enter a valid hour between 00 and 23."
+    fi
+done
+
+# Ask user for the minutes (00-59)
+while true; do
+    read -p "Please enter the minutes (00-59): " minute
+    # Check if the minutes are valid
+    if [[ "$minute" =~ ^([0-5]?[0-9])$ ]]; then
+        break
+    else
+        echo "Invalid minutes. Please enter valid minutes between 00 and 59."
+    fi
+done
+
 # Create the update script
 echo "#!/bin/bash" | sudo tee $SCRIPT_PATH > /dev/null
 echo "sudo apt update && sudo apt upgrade -y" | sudo tee -a $SCRIPT_PATH > /dev/null
@@ -29,7 +51,7 @@ echo "sudo apt update && sudo apt upgrade -y" | sudo tee -a $SCRIPT_PATH > /dev/
 sudo chmod +x $SCRIPT_PATH
 
 # Add the command to the root user's crontab
-(crontab -l 2>/dev/null; echo "30 16 * * * $SCRIPT_PATH") | sudo crontab -
+(crontab -l 2>/dev/null; echo "$minute $hour * * * $SCRIPT_PATH") | sudo crontab -
 
 # Configure sudo to not require a password for the command
 echo "$(whoami) ALL=(ALL) NOPASSWD: $SCRIPT_PATH" | sudo tee /etc/sudoers.d/update_script > /dev/null
@@ -37,7 +59,7 @@ echo "$(whoami) ALL=(ALL) NOPASSWD: $SCRIPT_PATH" | sudo tee /etc/sudoers.d/upda
 # Set the correct permissions
 sudo chmod 440 /etc/sudoers.d/update_script
 
-echo "Setup completed! The update script will run every day at 16:30."
+echo "Setup completed! The update script will run every day at $hour:$minute."
 
 # Prompt to reboot the system
 read -p "Do you want to reboot the system now? (y/n): " choice
