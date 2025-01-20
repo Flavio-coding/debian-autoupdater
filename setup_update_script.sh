@@ -55,9 +55,15 @@ existing_cron=$(sudo crontab -l 2>/dev/null | grep "$SCRIPT_PATH")
 
 if [[ -n "$existing_cron" ]]; then
     echo "A cron job for this script already exists."
-    read -p "Do you want to overwrite the existing cron job or add a new one with a different time? [o/a]: " cron_choice
+    read -p "Do you want to remove all existing cron jobs, overwrite the existing cron job, or add a new one with a different time? [r/o/a]: " cron_choice
 
-    if [[ "$cron_choice" == "o" ]]; then
+    if [[ "$cron_choice" == "r" ]]; then
+        # Remove all cron jobs related to the script
+        sudo crontab -l | grep -v "$SCRIPT_PATH" | sudo crontab -
+        echo "All existing cron jobs have been removed. Exiting."
+        rm -- "$0"  # Auto-delete the script
+        exit 0
+    elif [[ "$cron_choice" == "o" ]]; then
         # Remove the old cron job and add the new one
         sudo crontab -l | grep -v "$SCRIPT_PATH" | sudo crontab -
         (crontab -l 2>/dev/null; echo "$minute $hour * * * $SCRIPT_PATH") | sudo crontab -
