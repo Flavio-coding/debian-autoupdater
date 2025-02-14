@@ -1,5 +1,5 @@
 # debian-autoupdater
-A simple sh script that updates the apt repos at 16:30 every day
+A simple sh script that updates the apt repos at a defined hour every day
 
 1. Run `sudo apt install curl -y`.
 
